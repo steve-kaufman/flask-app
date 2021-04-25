@@ -3,11 +3,12 @@ from entities.user import User
 from security.fake_hasher import FakeHasher
 from security.fake_jwt_generator import FakeJWTGenerator
 from security.bcrypt_hasher import BCryptHasher
+from security.pyjwt_generator import PyJWTGenerator
 from . import router
 from usecases.login import LoginDependencies, LoginTokens, login
 from db.memory import MemoryDB
 
-jwtGenerator = FakeJWTGenerator()
+jwtGenerator = PyJWTGenerator("foo", "bar")
 hasher = BCryptHasher()
 
 example_users: list[User] = [

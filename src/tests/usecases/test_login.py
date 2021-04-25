@@ -22,6 +22,12 @@ class MockJWTGenerator:
   def generate_refresh_token(self, user_id: int, username: str) -> str:
     return str(user_id) + username + "foo"
 
+class BadJWTGenerator:
+  def generate_access_token(self, user_id: int, username: str) -> str:
+    raise Exception("foo")
+  def generate_refresh_token(self, user_id: int, username: str) -> str:
+    raise Exception("bar")
+
 example_users: list[User] = [
   User(
     id=1,
@@ -108,6 +114,15 @@ def test_throws_internal_when_check_passwd_errors():
     db=MockDB(),
     passwd_matcher=BadPasswordMatcher(),
     jwt=MockJWTGenerator()
+  )
+  with pytest.raises(exceptions.Internal):
+    login(protocols, "phillipfry", "1234")
+
+def test_throws_internal_when_jwt_errors():
+  protocols = LoginDependencies(
+    db=MockDB(),
+    passwd_matcher=MockPasswordMatcher(),
+    jwt=BadJWTGenerator()
   )
   with pytest.raises(exceptions.Internal):
     login(protocols, "phillipfry", "1234")

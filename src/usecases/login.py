@@ -26,7 +26,8 @@ def login(
     user = db.get_user_by_username(username)
   except(exceptions.UserNotFound):
     raise exceptions.UserNotFound(username)
-  except:
+  except Exception as e:
+    print(e)
     raise exceptions.Internal()
 
   try:
@@ -36,7 +37,11 @@ def login(
   if not passwd_matches:
     raise exceptions.BadPassword()
 
-  return LoginTokens(
-    access_token=jwt.generate_access_token(user.id, user.username),
+  try:
+    access_token=jwt.generate_access_token(user.id, user.username)
     refresh_token=jwt.generate_refresh_token(user.id, user.username)
-  )
+  except Exception as e:
+    print(e)
+    raise exceptions.Internal()
+
+  return LoginTokens(access_token, refresh_token)
