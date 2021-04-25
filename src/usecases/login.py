@@ -5,7 +5,7 @@ from protocols.password_matcher import PasswordMatcher
 from . import exceptions
 
 @dataclass
-class LoginProtocols:
+class LoginDependencies:
   db: UserGetter
   passwd_matcher: PasswordMatcher
   jwt: JWTGenerator
@@ -16,7 +16,7 @@ class LoginTokens:
   refresh_token: str
 
 def login(
-  protocols: LoginProtocols,
+  protocols: LoginDependencies,
   username: str, 
   password: str
 ) -> LoginTokens:
@@ -29,7 +29,11 @@ def login(
   except:
     raise exceptions.Internal()
 
-  if not passwd_matcher.match(password, user.password):
+  try:
+    passwd_matches = passwd_matcher.match(password, user.password)
+  except:
+    raise exceptions.Internal()
+  if not passwd_matches:
     raise exceptions.BadPassword()
 
   return LoginTokens(

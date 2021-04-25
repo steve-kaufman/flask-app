@@ -5,7 +5,8 @@ class MemoryDB:
   users: list[User]
 
   def __init__(self, users: list[User]) -> None:
-      self.users = users.copy()
+    self.users = users.copy()
+    print(self.users)
   def get_user_by_username(self, username: str) -> User:
     for user in self.users:
       if user.username == username:

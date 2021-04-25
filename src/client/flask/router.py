@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 
 from protocols.service import Service
+from usecases import exceptions
 
 def init_router(service: Service) -> Flask:
   app = Flask(__name__)
@@ -11,13 +12,19 @@ def init_router(service: Service) -> Flask:
     try: 
       username = data['username']
     except:
-      return 'Username is required'
+      return 'Username is required', 400
     try:
       password = data['password']
     except:
-      return 'Password is required'
+      return 'Password is required', 400
     
-    tokens = service.login(username, password)
+    try:
+      tokens = service.login(username, password)
+    except exceptions.Internal as e:
+      return str(e), 500
+    except Exception as e:
+      return str(e), 400
+
     return jsonify({
       "access_token": tokens.access_token,
       "refresh_token": tokens.refresh_token

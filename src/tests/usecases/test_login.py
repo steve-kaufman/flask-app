@@ -1,5 +1,5 @@
 import pytest
-from usecases.login import login, LoginProtocols
+from usecases.login import login, LoginDependencies
 from usecases import exceptions
 from entities.user import User
 
@@ -11,6 +11,10 @@ class MockPasswordMatcher:
     if mockHash(plain_pass) == secure_pass:
       return True
     return False
+
+class BadPasswordMatcher:
+  def match(self, plain_pass: str, secure_pass: str) -> bool:
+    raise Exception("Foo")
 
 class MockJWTGenerator:
   def generate_access_token(self, user_id: int, username: str) -> str:
@@ -71,7 +75,7 @@ db_error_tests = [
 
 def test_censors_db_errors():
   for test_case in db_error_tests:
-    protocols = LoginProtocols(
+    protocols = LoginDependencies(
       db=ErrorDB(test_case["db_err"]),
       passwd_matcher=MockPasswordMatcher(),
       jwt=MockJWTGenerator()
@@ -80,7 +84,7 @@ def test_censors_db_errors():
       login(protocols, "foo", "bar")
 
 def test_throws_not_found_with_bad_username():
-  protocols = LoginProtocols(
+  protocols = LoginDependencies(
     db=MockDB(),
     passwd_matcher=MockPasswordMatcher(),
     jwt=MockJWTGenerator()
@@ -91,7 +95,7 @@ def test_throws_not_found_with_bad_username():
 def test_throws_bad_password():
   bad_passwords = ["badpassword", "foo", "bar"]
   for bad_password in bad_passwords:
-    protocols = LoginProtocols(
+    protocols = LoginDependencies(
       db=MockDB(),
       passwd_matcher=MockPasswordMatcher(),
       jwt=MockJWTGenerator()
@@ -99,8 +103,17 @@ def test_throws_bad_password():
     with pytest.raises(exceptions.BadPassword):
       login(protocols, "phillipfry", bad_password)
 
+def test_throws_internal_when_check_passwd_errors():
+  protocols = LoginDependencies(
+    db=MockDB(),
+    passwd_matcher=BadPasswordMatcher(),
+    jwt=MockJWTGenerator()
+  )
+  with pytest.raises(exceptions.Internal):
+    login(protocols, "phillipfry", "1234")
+
 def test_returns_access_and_refresh_token():
-  protocols = LoginProtocols(
+  protocols = LoginDependencies(
     db=MockDB(),
     passwd_matcher=MockPasswordMatcher(),
     jwt=MockJWTGenerator()
