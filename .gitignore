@@ -4,3 +4,4 @@ venv/
 app.egg-info/
 .vscode/
 .coverage
+*.db
