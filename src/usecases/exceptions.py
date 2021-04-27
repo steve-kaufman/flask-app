@@ -1,6 +1,3 @@
-from _pytest._code.code import ExceptionChainRepr
-
-
 class Internal(Exception):
   def __init__(self):
     super().__init__("Internal error")
