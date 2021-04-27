@@ -22,7 +22,8 @@ def _username_is_unique(user_getter: UserGetter, username: str) -> bool:
     user_getter.get_user_by_username(username)
   except exceptions.UserNotFound:
     return True
-  except:
+  except Exception as e:
+    print(e)
     raise exceptions.Internal()
   return False
 

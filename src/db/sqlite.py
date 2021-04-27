@@ -1,7 +1,8 @@
 from typing import Tuple
 from sqlalchemy import create_engine, Column, Integer, String, select
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker, Session
+import sqlalchemy.orm
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from entities.user import User
 from usecases import exceptions
@@ -15,21 +16,22 @@ class UserModel(Base):
   password = Column(String)
 
 class SQLiteDB:
-  session: Session
+  Session: sqlalchemy.orm.Session
 
   def __init__(self, location: str) -> None:
     engine = create_engine('sqlite:///' + location, echo=True)
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
-    self.session = Session()
+    self.Session = Session
 
   def create_user(self, user: User) -> None:
     user_model = UserModel(username=user.username, password=user.password)
-    self.session.add(user_model)
-    self.session.commit()
+    session = self.Session()
+    session.add(user_model)
+    session.commit()
 
   def get_user_by_username(self, username: str) -> User:
-    user_model: UserModel = self.session.query(UserModel).where(
+    user_model: UserModel = self.Session().query(UserModel).where(
       UserModel.username == username
     ).first()
     if not user_model:
