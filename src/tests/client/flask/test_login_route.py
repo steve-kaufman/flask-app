@@ -1,25 +1,11 @@
 import pytest
 import flask
 import flask.testing
-from client.flask.router import init_router
-from usecases.login import LoginTokens
+from client.flask.router import Router
 from usecases import exceptions
+from .mocks import MockService, BadService
 
-class MockService:
-  def login(self, username: str, password: str) -> LoginTokens:
-    return LoginTokens(
-      access_token=(username + password + "foo"),
-      refresh_token=(username + password + "bar")
-    )
-
-class BadService:
-  exception: Exception
-  def __init__(self, exception: Exception) -> None:
-    self.exception = exception
-  def login(self, username: str, password: str) -> LoginTokens:
-    raise self.exception
-
-app = init_router(MockService())
+app = Router(MockService()).app
 
 @pytest.fixture
 def client():
@@ -27,7 +13,7 @@ def client():
   with app.test_client() as client:
     return client
 
-def test_login_needs_method_post(client: flask.testing.FlaskClient):
+def test_needs_method_post(client: flask.testing.FlaskClient):
   rv: flask.Response = client.get('/login')
   assert rv.status_code == 405
   rv: flask.Response = client.patch('/login')
@@ -37,7 +23,7 @@ def test_login_needs_method_post(client: flask.testing.FlaskClient):
   rv: flask.Response = client.delete('/login')
   assert rv.status_code == 405
 
-def test_login_needs_username(client: flask.testing.FlaskClient):
+def test_needs_username(client: flask.testing.FlaskClient):
   rv: flask.Response = client.post('/login', json={})
   assert b'Username is required' in rv.data
   rv: flask.Response = client.post('/login', json={ 
@@ -46,15 +32,15 @@ def test_login_needs_username(client: flask.testing.FlaskClient):
   assert b'Username is required' in rv.data
   assert rv.status_code == 400
 
-def test_login_needs_password(client: flask.testing.FlaskClient):
+def test_needs_password(client: flask.testing.FlaskClient):
   rv: flask.Response = client.post('/login', json={
     'username': 'johndoe',
   })
   assert b'Password is required' in rv.data
   assert rv.status_code == 400
 
-def test_login_responds_with_exception(client: flask.testing.FlaskClient):
-  badApp = init_router(BadService(Exception('Foo')))
+def test_responds_with_exception_message(client: flask.testing.FlaskClient):
+  badApp = Router(BadService(Exception('Foo'))).app
   with badApp.test_client() as c:
     rv: flask.Response = c.post('/login', json={
       'username': 'johndoe',
@@ -63,7 +49,7 @@ def test_login_responds_with_exception(client: flask.testing.FlaskClient):
     assert b'Foo' in rv.data
     assert rv.status_code == 400
 
-  badApp = init_router(BadService(exceptions.Internal()))
+  badApp = Router(BadService(exceptions.Internal())).app
   with badApp.test_client() as c:
     rv: flask.Response = c.post('/login', json={
       'username': 'johndoe',
@@ -72,7 +58,7 @@ def test_login_responds_with_exception(client: flask.testing.FlaskClient):
     assert b'Internal error' in rv.data
     assert rv.status_code == 500
 
-def test_login_success(client: flask.testing.FlaskClient):
+def test_success(client: flask.testing.FlaskClient):
   rv: flask.Response = client.post('/login', json={
     'username': 'johndoe',
     'password': 'supersecret'
